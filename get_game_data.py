@@ -12,17 +12,13 @@ GAME_COMPILE_COMMAND = ["go", "build"]
 
 def find_all_game_paths(source):
     game_paths = []
-
     for root, dirs, files in os.walk(source):
         for directory in dirs:
             if GAME_DIR_PATTERN in directory.lower():
-                path = os.path.join(source, directory)
+                path = os.path.join(root, directory)
                 game_paths.append(path)
-
         break
-
     return game_paths
-
 
 def get_name_from_paths(paths, to_strip):
     new_names = []
@@ -33,17 +29,14 @@ def get_name_from_paths(paths, to_strip):
 
     return new_names
 
-
 def create_dir(path):
     if not os.path.exists(path):
         os.mkdir(path)
-
 
 def copy_and_overwrite(source, dest):
     if os.path.exists(dest):
         shutil.rmtree(dest)
     shutil.copytree(source, dest)
-
 
 def make_json_metadata_file(path, game_dirs):
     data = {
@@ -54,7 +47,6 @@ def make_json_metadata_file(path, game_dirs):
     with open(path, "w") as f:
         json.dump(data, f)
 
-
 def compile_game_code(path):
     code_file_name = None
     for root, dirs, files in os.walk(path):
@@ -62,24 +54,19 @@ def compile_game_code(path):
             if file.endswith(GAME_CODE_EXTENSION):
                 code_file_name = file
                 break
-
         break
-
     if code_file_name is None:
+        print(f"No Go code found in {path}")
         return
-
+    print(f"Compiling {code_file_name} in {path}")
     command = GAME_COMPILE_COMMAND + [code_file_name]
     run_command(command, path)
 
-
 def run_command(command, path):
-    cwd = os.getcwd()
-    os.chdir(path)
-
-    result = run(command, stdout=PIPE, stdin=PIPE, universal_newlines=True)
+    
+    print(f"running: {command} in {path}")
+    result = run(command, cwd=path,  stdout=PIPE, stdin=PIPE, text=True)
     print("compile result", result)
-
-    os.chdir(cwd)
 
 def main(source, target):
     cwd = os.getcwd()
@@ -97,13 +84,13 @@ def main(source, target):
         compile_game_code(dest_path)
 
     json_path = os.path.join(target_path, "metadata.json")
-    make_json_metadata_file(json_path, new_game_dirs)
+    make_json_metadata_file(json_path, new_game_dirs )
 
 
 if __name__ == "__main__":
     args = sys.argv
     if len(args) != 3:
         raise Exception("You must pass a source and target directory - only.")
-
+    
     source, target = args[1:]
     main(source, target)
